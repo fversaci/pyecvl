@@ -35,6 +35,16 @@
 #include <ecvl/core/support_dcmtk.h>
 #endif
 
+
+class PyAugmentation : public ecvl::Augmentation {
+public:
+    using ecvl::Augmentation::Augmentation;
+
+    void RealApply(ecvl::Image& img, const ecvl::Image& gt = ecvl::Image()) override {
+	PYBIND11_OVERLOAD_PURE(void, ecvl::Augmentation, RealApply, img, gt);
+    }
+};
+
 void bind_ecvl_functions(pybind11::module &m) {
   m.def("RearrangeChannels", [](const ecvl::Image& src, ecvl::Image& dst, const std::string& channels) {
     ecvl::RearrangeChannels(src, dst, channels);
@@ -83,6 +93,7 @@ void bind_ecvl_functions(pybind11::module &m) {
       }, "Find contours in a binary image");
 #ifdef ECVL_EDDL
   // augmentations: AugmentationParam
+  {
   pybind11::class_<ecvl::AugmentationParam, std::shared_ptr<ecvl::AugmentationParam>> cl(m, "AugmentationParam", "Augmentations parameters. This class represent the augmentations parameters which must be randomly generated in a specific range.");
   cl.def(pybind11::init([](){ return new ecvl::AugmentationParam(); }));
   cl.def( pybind11::init<const double, const double>(), pybind11::arg("min"), pybind11::arg("max"));
@@ -91,6 +102,23 @@ void bind_ecvl_functions(pybind11::module &m) {
   cl.def_readwrite("value_", &ecvl::AugmentationParam::value_);
   cl.def("GenerateValue", (void (ecvl::AugmentationParam::*)()) &ecvl::AugmentationParam::GenerateValue, "Generate the random value between min_ and max_.");
   cl.def_static("SetSeed", (void (*)(unsigned int)) &ecvl::AugmentationParam::SetSeed, "Set a fixed seed for the random generated values. Useful to reproduce experiments with same augmentations.", pybind11::arg("seed"));
+  }
+  // augmentations: Augmentation
+  {
+  pybind11::class_<ecvl::Augmentation, std::shared_ptr<ecvl::Augmentation>, PyAugmentation> cl(m, "Augmentation", "Abstract class which represent a generic Augmentation function.");
+  cl.def(pybind11::init<>());
+  cl.def_readwrite("params_", &ecvl::Augmentation::params_);
+  cl.def("Apply", [](ecvl::Augmentation &o, class ecvl::Image & a0) -> void { return o.Apply(a0); }, "", pybind11::arg("img"));
+  cl.def("Apply", (void (ecvl::Augmentation::*)(class ecvl::Image &, const class ecvl::Image &)) &ecvl::Augmentation::Apply, "Generate the random value for each parameter and call the specialized augmentation functions.", pybind11::arg("img"), pybind11::arg("gt"));
+  }
+  // augmentations: AugFlip
+  {
+  pybind11::class_<ecvl::AugFlip, std::shared_ptr<ecvl::AugFlip>, ecvl::Augmentation> cl(m, "AugFlip", "Augmentation wrapper for ecvl::Flip2D.");
+  cl.def(pybind11::init<const double &>(), pybind11::arg("p"));
+  cl.def("RealApply", [](ecvl::AugFlip &o, class ecvl::Image & a0) -> void { return o.RealApply(a0); }, "", pybind11::arg("img"));
+  cl.def("RealApply", (void (ecvl::AugFlip::*)(class ecvl::Image &, const class ecvl::Image &)) &ecvl::AugFlip::RealApply, "C++: ecvl::AugFlip::RealApply(class ecvl::Image &, const class ecvl::Image &) --> void", pybind11::arg("img"), pybind11::arg("gt"));
+  }
+
   // support_eddl: ImageToTensor
   m.def("ImageToTensor", [](const ecvl::Image& img) {
     Tensor* t;
