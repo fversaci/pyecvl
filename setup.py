@@ -39,6 +39,7 @@ OPENCV_LIBS = [
     "opencv_core",
     "opencv_imgcodecs",
     "opencv_imgproc",
+    "opencv_photo",
 ]
 DICOM_LIBS = [
     "dcmdata",

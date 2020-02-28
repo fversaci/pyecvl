@@ -18,41 +18,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""\
-Reads a DeepHealth dataset.
-"""
-
-import argparse
-import sys
-
+import pytest
 import pyecvl._core.ecvl as ecvl
 
 
-def main(args):
-    print("reading", args.in_fn)
-    d = ecvl.Dataset(args.in_fn)
-    print("name:", d.name_)
-    print("description:", d.description_)
-    print("classes:", d.classes_)
-    print("features:", d.features_)
-    print("n. samples:", len(d.samples_))
-    print("  training:", len(d.split_.training_))
-    print("  validation:", len(d.split_.validation_))
-    print("  test:", len(d.split_.test_))
-    print("loading first sample image")
-    print("  location:", d.samples_[0].location_)
-    img = d.samples_[0].LoadImage()
-    out_path = "img0.png"
-    print("saving first sample image as", out_path)
-    ecvl.ImWrite(out_path, img)
-
-    # check setter for completeness, but why would anyone want to do this?
-    loc = ["/foo/bar"]
-    d.samples_[0].location_ = loc
-    assert d.samples_[0].location_ == loc
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("in_fn", metavar="INPUT_PATH")
-    main(parser.parse_args(sys.argv[1:]))
+def test_AugmentationParam():
+    ap = ecvl.AugmentationParam()
+    min_, max_ = 0.1, 1.2
+    ap = ecvl.AugmentationParam(min_, max_)
+    assert ap.min_ == pytest.approx(min_)
+    assert ap.max_ == pytest.approx(max_)
+    ap.SetSeed(12345)
+    ap.GenerateValue()
+    assert min_ <= ap.value_ <= max_
