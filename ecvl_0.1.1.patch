@@ -1,0 +1,59 @@
+diff --git a/modules/eddl/include/ecvl/augmentations.h b/modules/eddl/include/ecvl/augmentations.h
+index a65e6a4..e8f0659 100644
+--- a/modules/eddl/include/ecvl/augmentations.h
++++ b/modules/eddl/include/ecvl/augmentations.h
+@@ -106,6 +106,10 @@ public:
+         augs_.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
+     }
+ 
++    void Add(Augmentation* aug) {
++	augs_.push_back(std::unique_ptr<Augmentation>(aug));
++    }
++
+     /** @brief Call the specialized augmentation functions.
+ 
+     @param[in] img Image on which apply the augmentations.
+@@ -372,4 +376,4 @@ public:
+ };
+ } // namespace ecvl
+ 
+-#endif // AUGMENTATIONS_H_
+\ No newline at end of file
++#endif // AUGMENTATIONS_H_
+diff --git a/modules/eddl/include/ecvl/support_eddl.h b/modules/eddl/include/ecvl/support_eddl.h
+index 3b45542..757de51 100644
+--- a/modules/eddl/include/ecvl/support_eddl.h
++++ b/modules/eddl/include/ecvl/support_eddl.h
+@@ -43,6 +43,12 @@ public:
+ 
+     DatasetAugmentations(std::array<unique_ptr<Augmentation>, 3> augs = { nullptr,nullptr,nullptr }) : augs_{ std::move(augs) } {}
+ 
++    void SetAugs(Augmentation* tr, Augmentation* val, Augmentation* test) {
++	augs_[0] = std::unique_ptr<Augmentation>(tr);
++	augs_[1] = std::unique_ptr<Augmentation>(val);
++	augs_[2] = std::unique_ptr<Augmentation>(test);
++    }
++
+     void Apply(SplitType st, Image& img, const Image& gt = Image())
+     {
+         if (augs_[+st]) { // Magic + operator
+@@ -107,6 +113,12 @@ public:
+         }
+     }
+ 
++    void SetAugs(Augmentation* tr, Augmentation* val, Augmentation* test) {
++	augs_.augs_[0] = std::unique_ptr<Augmentation>(tr);
++	augs_.augs_[1] = std::unique_ptr<Augmentation>(val);
++	augs_.augs_[2] = std::unique_ptr<Augmentation>(test);
++    }
++
+     /** @brief Returns the image indexes of the current Split.
+     @return vector of image indexes of the Split in use.
+     */
+@@ -192,4 +204,4 @@ void ImageToTensor(const Image& img, tensor& t, const int& offset);
+ */
+ } // namespace ecvl
+ 
+-#endif // ECVL_SUPPORT_EDDL_H_
+\ No newline at end of file
++#endif // ECVL_SUPPORT_EDDL_H_

@@ -18,16 +18,48 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import pytest
+"""\
+Experiments with the augmentations machinery.
+"""
+
+import argparse
+import os
+import sys
+
 import pyecvl._core.ecvl as ecvl
 
 
-def test_AugmentationParam():
-    ap = ecvl.AugmentationParam()
-    min_, max_ = 0.1, 1.2
-    ap = ecvl.AugmentationParam(min_, max_)
-    assert ap.min_ == pytest.approx(min_)
-    assert ap.max_ == pytest.approx(max_)
-    ecvl.AugmentationParam.SetSeed(12345)
-    ap.GenerateValue()
-    assert min_ <= ap.value_ <= max_
+def main(args):
+    head, ext = os.path.splitext(os.path.basename(args.in_fn))
+    img = ecvl.ImRead(args.in_fn)
+    c = ecvl.SequentialAugmentationContainer()
+
+    ecvl.addAugFlip(c, 0.5)
+    print(c.augs_)
+    ecvl.addAugFlip(c, 0.8)
+    print(c.augs_)
+
+    c.Apply(img)
+    out_fn = "%s_flip%s" % (head, ext)
+    print("writing", out_fn)
+    ecvl.ImWrite(out_fn, img)
+
+    # DatasetAugmentations
+    c1 = ecvl.SequentialAugmentationContainer()
+    ecvl.addAugFlip(c1, 0.5)
+    c2 = ecvl.SequentialAugmentationContainer()
+    ecvl.addAugFlip(c2, 0.8)
+    da = ecvl.DatasetAugmentations()
+    da.SetAugs(c1, None, c2)
+    print(da.augs_)
+    img = ecvl.ImRead(args.in_fn)
+    da.Apply(ecvl.SplitType.training, img)
+    out_fn = "%s_aug%s" % (head, ext)
+    print("writing", out_fn)
+    ecvl.ImWrite(out_fn, img)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("in_fn", metavar="INPUT_PATH")
+    main(parser.parse_args(sys.argv[1:]))
